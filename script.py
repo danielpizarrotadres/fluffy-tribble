@@ -7,21 +7,26 @@ yellow = "\033[33m"
 # Reset color to default
 reset = "\033[0m"
 
-# def group_passengers_by_two(passengers):
-#     adults = [passenger for passenger in passengers if passenger["passengerType"] == "ADULT"]
-#     children = [passenger for passenger in passengers if passenger["passengerType"] == "CHILD"]
+def group_passengers_by_two(passengers):
+    adults = [passenger for passenger in passengers if passenger["passengerType"] == "ADULT"]
+    children = [passenger for passenger in passengers if passenger["passengerType"] == "CHILD"]
 
-#     grouped_passengers = []
+    grouped_passengers = []
 
-#     while adults and children:
-#         grouped_passengers.append([adults.pop(0), children.pop(0)])
+    while adults and children:
+        grouped_passengers.append([adults.pop(0), children.pop(0)])
     
-#     if len(children) > 0:
-#         for i in range(len(grouped_passengers)):
-#             if children and len(grouped_passengers[i]) < 3:
-#                 grouped_passengers[i].append(children.pop(0))
+    if len(children) > 0:
+        for i in range(len(grouped_passengers)):
+            if children and len(grouped_passengers[i]) < 3:
+                grouped_passengers[i].append(children.pop(0))
+
+    if len(adults) > 0:
+        while adults:
+            # This could be improved, by joining all adults in a single group
+            grouped_passengers.append([adults.pop(0)])
     
-#     return grouped_passengers
+    return grouped_passengers
 
 def group_passengers_by_three(passengers):
     adults = [passenger for passenger in passengers if passenger["passengerType"] == "ADULT"]
@@ -49,9 +54,8 @@ def group_passengers_by_three(passengers):
             grouped_passengers.append([adults.pop(0)])
 
     if len(children) > 0:
-        print('Fails, childrens keeping left alone')
         # TODO: Improve this case, should to be reagrouped by two
-        # return group_passengers_by_two(passengers)
+        return group_passengers_by_two(passengers)
     
     return grouped_passengers
 
@@ -105,6 +109,7 @@ passengers = [
     {"id": 4, "passengerType": "CHILD"}
 ]
 print(f"{green}Test case 4: Total 4 passengers -> (A=3, C=1){reset}")
+print(f"{yellow}Reminder: This case prioritizes the formation of groups of 3 passengers. Explanation for the output of (1 ADT + CHD + 1ADT) and + (1 ADT) this last alone{reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
@@ -118,12 +123,11 @@ passengers = [
     {"id": 3, "passengerType": "CHILD"},
     {"id": 4, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 4: Total 4 passengers -> (A=2, C=2)")
-print(f"Fail: Child ID 4 left alone{reset}")
+print(f"{green}Test case 4: Total 4 passengers -> (A=2, C=2){reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 # Total 5 passengers -> (A=4, C=1)
@@ -165,12 +169,12 @@ passengers = [
     {"id": 4, "passengerType": "CHILD"},
     {"id": 5, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 7: Total 5 passengers -> (A=2, C=3)")
-print(f"Fail: Child ID 4 and 5 left alone{reset}")
+print(f"{green}Test case 7: Total 5 passengers -> (A=2, C=3){reset}")
+print(f"{warning}Reminder: En este caso no se cumple lo esperado de que esta funcionalidad tenga la prioridad de formacion de grupo de 3 passengers 1ADT + 1CHD + 1ADT{reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+warning += 1
 print("\n")
 
 # Total 6 passengers -> (A=5, C=1)
@@ -231,12 +235,11 @@ passengers = [
     {"id": 5, "passengerType": "CHILD"},
     {"id": 6, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 11: Total 6 passengers -> (A=3, C=3)")
-print(f"Fail: Child ID 4 and 5 left alone{reset}")
+print(f"{green}Test case 11: Total 6 passengers -> (A=2, C=4){reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 # Total 7 passengers -> (A=6, C=1)
@@ -284,12 +287,11 @@ passengers = [
     {"id": 6, "passengerType": "CHILD"},
     {"id": 7, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 14: Total 7 passengers -> (A=4, C=3)")
-print(f"Fail: Child ID 7  left alone{reset}")
+print(f"{green}Test case 14: Total 7 passengers -> (A=4, C=3){reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 # Total 7 passengers -> (A=3, C=4)
@@ -302,12 +304,11 @@ passengers = [
     {"id": 6, "passengerType": "CHILD"},
     {"id": 7, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 15: Total 7 passengers -> (A=3, C=4)")
-print(f"Fail: Child ID 6 and 7 left alone{reset}")
+print(f"{green}Test case 15: Total 7 passengers -> (A=3, C=4){reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 # Total 8 passengers -> (A=7, C=1)
@@ -377,12 +378,11 @@ passengers = [
     {"id": 7, "passengerType": "CHILD"},
     {"id": 8, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 19: Total 8 passengers -> (A=4, C=4)")
-print(f"Fail: Child ID 7 and 8 left alone{reset}")
+print(f"{green}Test case 19: Total 8 passengers -> (A=4, C=4) {reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 # Total 9 passengers -> (A=8, C=1)
@@ -475,12 +475,11 @@ passengers = [
     {"id": 8, "passengerType": "CHILD"},
     {"id": 8, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 23: Total 9 passengers -> (A=4, C=5)")
-print(f"Fail: Child ID 7, 8 and 9 left alone{reset}")
+print(f"{green}Test case 23: Total 9 passengers -> (A=4, C=5){reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 # Total 9 passengers -> (A=3 C=6)
@@ -495,12 +494,11 @@ passengers = [
     {"id": 8, "passengerType": "CHILD"},
     {"id": 8, "passengerType": "CHILD"}
 ]
-print(f"{red}Test case 22: Total 9 passengers -> (A=5, C=4)")
-print(f"Fail: Child ID 7, 8 and 9 left alone{reset}")
+print(f"{green}Test case 22: Total 9 passengers -> (A=3, C=6){reset}")
 for p in group_passengers_by_three(passengers):
     print(p)
 
-errors += 1
+success += 1
 print("\n")
 
 print(f"Result for success: {success}")
