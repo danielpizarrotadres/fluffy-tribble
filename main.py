@@ -78,7 +78,7 @@ passengers = [
     {"id": 1, "passengerType": "ADULT"},
     {"id": 2, "passengerType": "ADULT"}
 ]
-print(f"{green}Test case 1: Total 2 passengers -> (A=2, C=1){reset}")
+print(f"{green}Test case 1: Total 2 passengers -> (A=1, C=1){reset}")
 
 available_seats = get_available_seats(cabin_seats)
 trios = try_match_trios(passengers)
