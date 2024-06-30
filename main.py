@@ -2,11 +2,20 @@ from tests import get_available_seats
 from script import try_match_trios, try_match_doubles
 from seat_search_engine import seat_search_engine
 
+# ANSI escape code for red
+red = "\033[91m"
+# ANSI escape code for green
+green = "\033[92m"
+# ANSI escape code for yellow
+yellow = "\033[33m"
+# Reset color to default
+reset = "\033[0m"
+
 cabin_seats = [
     {"seat": "1A", "row": 1, "column": "A", "status": "AVAILABLE"},
     {"seat": "1B", "row": 1, "column": "B", "status": "AVAILABLE"},
-    {"seat": "1C", "row": 1, "column": "C", "status": "NOT_AVAILABLE"},
-    {"seat": "1D", "row": 1, "column": "D", "status": "NOT_AVAILABLE"},
+    {"seat": "1C", "row": 1, "column": "C", "status": "AVAILABLE"},
+    {"seat": "1D", "row": 1, "column": "D", "status": "AVAILABLE"},
     {"seat": "1E", "row": 1, "column": "E", "status": "NOT_AVAILABLE"},
     {"seat": "1F", "row": 1, "column": "F", "status": "NOT_AVAILABLE"},
     {"seat": "2A", "row": 2, "column": "A", "status": "NOT_AVAILABLE"},
@@ -56,5 +65,32 @@ def assign_seats(groups, available_seats):
     else:
         return []
 
-result = assign_seats(doubles, available_seats)
-print(result)
+success = 0
+warning = 0
+errors = 0
+
+print("\n")
+print("- Test cases for assign_seats function for trios:")
+print("\n")
+
+# Total 3 passengers -> (A=2, C=1)
+passengers = [
+    {"id": 1, "passengerType": "ADULT"},
+    {"id": 2, "passengerType": "ADULT"},
+    {"id": 3, "passengerType": "CHILD"}
+]
+print(f"{green}Test case 1: Total 3 passengers -> (A=2, C=1){reset}")
+
+available_seats = get_available_seats(cabin_seats)
+trios = try_match_trios(passengers)
+
+result = assign_seats(trios, available_seats)
+
+if len(result) == 0:
+    print(f"No available seats: {result}")
+else:
+    for group in result:
+        print(group)
+
+success += 1
+print("\n")
