@@ -1,4 +1,5 @@
 from tests import group_available_seats_by_row
+from script import group_passengers_by_three
 
 cabin_seats = [
     {"seat": "1A", "row": 1, "column": "A", "status": "NOT_AVAILABLE"},
@@ -15,4 +16,33 @@ cabin_seats = [
     {"seat": "3F", "row": 2, "column": "F", "status": "NOT_AVAILABLE"}
 ]
 
-print(group_available_seats_by_row(cabin_seats))
+passengers = [
+    {"id": 1, "passengerType": "ADULT"},
+    {"id": 2, "passengerType": "CHILD"}
+]
+
+available_seats = group_available_seats_by_row(cabin_seats)
+
+group_passengers = group_passengers_by_three(passengers)
+
+print('----------------------')
+print("\n")
+
+for i in available_seats:
+    print(i)
+    print("\n")
+
+print('----------------------')
+print("\n")
+
+for i in group_passengers:
+    print(i)
+    print("\n")
+    for j in available_seats:
+        print(j)
+        print("\n")
+        if len(j) >= len(i):
+            print("Yes")
+        else:
+            print("No")
+        print("\n")
