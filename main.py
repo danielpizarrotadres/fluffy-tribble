@@ -20,7 +20,7 @@ cabin_seats = [
 passengers = [
     {"id": 1, "passengerType": "ADULT"},
     {"id": 2, "passengerType": "CHILD"},
-    {"id": 2, "passengerType": "CHILD"}
+    {"id": 3, "passengerType": "CHILD"}
 ]
 
 
@@ -30,69 +30,23 @@ trios = try_match_trios(passengers)
 
 doubles = try_match_doubles(passengers)
 
-for i, seats in enumerate(available_seats):
-    print(f"Current group of seats {i + 1} of total {len(available_seats)}")
-    for j, seat in enumerate(seats):
-        print(f"Seat: {j + 1} of total {len(seats)}")
-        print(seat)
-
-print("\n")
-
-availability = True
-
-for i, passengers in enumerate(trios):
-    print(f"Current group of passengers: {i + 1} of total {len(trios)} groups / Total passengers for current group: {len(passengers)}")
-
-    total_passengers = len(passengers)
-
-    candidate_seats = []
-
-    for k, seats in enumerate(available_seats):
-        if len(seats) >= total_passengers:
-                candidate_seats.append(seats)
-
-    total_candidates = len(candidate_seats)
-
-    print(f"Total candidates: {total_candidates}") 
-
-    if total_candidates == 0:
-        availability = False
-
-    print(candidate_seats)
-
-    matched_seats = seat_search_engine(candidate_seats, total_passengers)
-
-    print("\n")
-    print(matched_seats)
-
-if availability:
-    print("All passengers have been assigned a seat")
-else:
-    print("There are passengers without a seat")
-    for i, passengers in enumerate(doubles):
+def assign_seats(groups, available_seats):
+    availability = True
+    seats_results = []
+    for i, passengers in enumerate(groups):
         total_passengers = len(passengers)
-
         candidate_seats = []
-
         for k, seats in enumerate(available_seats):
             if len(seats) >= total_passengers:
                     candidate_seats.append(seats)
-        
         total_candidates = len(candidate_seats)
-
-        print(f"Total candidates: {total_candidates}")
-
         if total_candidates == 0:
             availability = False
-
-        print(candidate_seats)
-
+            break
         matched_seats = seat_search_engine(candidate_seats, total_passengers)
+        seats_results.append(matched_seats)
+    return seats_results
 
-        print("\n")
-        print(matched_seats)
 
-    if availability:
-        print("All passengers have been assigned a seat")
-    else:
-        print("There are passengers without a seat")
+result = assign_seats(doubles, available_seats)
+print(result)
