@@ -73,13 +73,34 @@ print("\n")
 print("- Test cases for assign_seats function for trios:")
 print("\n")
 
+# Total 2 passengers -> (A=1, C=1)
+passengers = [
+    {"id": 1, "passengerType": "ADULT"},
+    {"id": 2, "passengerType": "ADULT"}
+]
+print(f"{green}Test case 1: Total 2 passengers -> (A=2, C=1){reset}")
+
+available_seats = get_available_seats(cabin_seats)
+trios = try_match_trios(passengers)
+
+result = assign_seats(trios, available_seats)
+
+if len(result) == 0:
+    print(f"No available seats: {result}")
+else:
+    for group in result:
+        print(group)
+
+success += 1
+print("\n")
+
 # Total 3 passengers -> (A=2, C=1)
 passengers = [
     {"id": 1, "passengerType": "ADULT"},
     {"id": 2, "passengerType": "ADULT"},
     {"id": 3, "passengerType": "CHILD"}
 ]
-print(f"{green}Test case 1: Total 3 passengers -> (A=2, C=1){reset}")
+print(f"{green}Test case 2: Total 3 passengers -> (A=2, C=1){reset}")
 
 available_seats = get_available_seats(cabin_seats)
 trios = try_match_trios(passengers)
