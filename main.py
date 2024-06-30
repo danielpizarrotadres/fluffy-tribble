@@ -1,4 +1,4 @@
-from tests import get_available_seats
+from seats import get_available_seats
 from trios_and_doubles import try_match_trios, try_match_doubles
 from seat_search_engine import seat_search_engine
 
