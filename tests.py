@@ -1,15 +1,5 @@
-from script import group_passengers_by_one
-
-# Total 2 passengers -> (A=1, C=1)
-# passengers = [
-#     {"id": 1, "passengerType": "ADULT"},
-#     {"id": 2, "passengerType": "CHILD"}
-# ]
-# result = group_passengers_by_one(passengers)
-# print(result)
-
 cabin_seats = [
-    {"seat": "1A", "row": 1, "column": "A", "status": "NOT_AVAILABLE"},
+    {"seat": "1A", "row": 1, "column": "A", "status": "AVAILABLE"},
     {"seat": "1B", "row": 1, "column": "B", "status": "NOT_AVAILABLE"},
     {"seat": "1C", "row": 1, "column": "C", "status": "AVAILABLE"},
     {"seat": "1D", "row": 1, "column": "D", "status": "AVAILABLE"},
@@ -23,7 +13,7 @@ cabin_seats = [
     {"seat": "3F", "row": 2, "column": "F", "status": "NOT_AVAILABLE"}
 ]
 
-def group_available_seats_by_row(seats):
+def get_available_seats(seats):
     rows = {}
     # Group seats by row
     for seat in seats:
@@ -57,8 +47,3 @@ def group_available_seats_by_row(seats):
             result.append(current_group)
     
     return result
-
-grouped_cabin_seats_by_row_and_status = group_available_seats_by_row(cabin_seats)
-for group in grouped_cabin_seats_by_row_and_status:
-    print(group)
-    print("\n")
