@@ -11,7 +11,7 @@ def group_passengers_by_one(passengers):
     grouped_passengers = []
     while passengers:
         grouped_passengers.append([passengers.pop(0)])
-    return group_passengers_by_one
+    return grouped_passengers
 
 # This function prioritizes the join of two passengers: one adult and one child
 # Si no alcanza a agruparse por 2, se dejan sueltos
