@@ -75,8 +75,8 @@ def try_match_trios(passengers):
     grouped_passengers = []
     
     # Step 1: Try to form groups of (ADULT + CHILD + ADULT)
-    while len(adults) >= 2 and children:
-        grouped_passengers.append([adults.pop(0), children.pop(0), adults.pop(0)])
+    while len(children) >= 2 and adults:
+        grouped_passengers.append([children.pop(0), adults.pop(0), children.pop(0)])
 
     # Step 2: Form groups of (ADULT + CHILD) with remaining passengers
     while adults and children:
@@ -90,12 +90,16 @@ def try_match_trios(passengers):
     
     # Step 3: If there are adults left, keep them alone in their groups
     if len(adults) > 0 and len(children) == 0:
-        while adults:
-            grouped_passengers.append([adults.pop(0)])
+        for i in range(len(grouped_passengers)):
+            if adults and len(grouped_passengers[i]) < 3:
+                grouped_passengers[i].append(adults.pop(0))
 
     if len(children) > 0:
-        # TODO: Improve this case, should to be reagrouped by two
         return merge_trios_and_doubles(passengers)
+    
+    if len(adults) > 0:
+        while adults:
+            grouped_passengers.append([adults.pop(0)])
     
     return grouped_passengers
 
@@ -293,7 +297,6 @@ passengers = [
     {"id": 7, "passengerType": "CHILD"}
 ]
 print(f"{green}Test case 12 (try_match_trios): Total 7 passengers -> (A=6, C=1){reset} ✅")
-print(f"{yellow}Improve: Adult ID 3, 4, 5 and 6 left alone (could be joined){reset}")
 for p in try_match_trios(passengers):
     print(p)
 
