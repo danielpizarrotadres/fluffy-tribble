@@ -87,12 +87,16 @@ for index, flight in enumerate(affected_flights):
         
         # Compare segments to set Sync / Out of Sync
         if order_segment and sws_segment:
-            temp_data["Sync / Out of Sync"] = (order_segment['origin'] == sws_segment['origin'] and
-                                               order_segment['flightNumber']['marketing'] == sws_segment['flightNumber']['marketing'] and
-                                               order_segment['departureDate'] == sws_segment['departureDate'])
+            sync_status = order_segment['origin'] == sws_segment['origin'] and \
+                  order_segment['flightNumber']['marketing'] == sws_segment['flightNumber']['marketing'] and \
+                  order_segment['departureDate'] == sws_segment['departureDate']
+            temp_data["Sync / Out of Sync"] = str(sync_status)  # Convert boolean to string
         
         data_for_excel.append(temp_data)
 
+        df = pd.DataFrame(data_for_excel)
+        df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights")
+
 df = pd.DataFrame(data_for_excel)
-df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights")
+df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights-Finished")
 
