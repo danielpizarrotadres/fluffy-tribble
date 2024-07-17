@@ -28,7 +28,7 @@ def fetch_data_from_reservation_order(pnr):
         response.raise_for_status()
         return response.json()
     except Exception as err:
-        # TODO: Make something
+        # TODO: Handle the exception properly
         return None 
 
 def find_flight(itinerary_parts, flight_number, origin, departure_date):
@@ -41,22 +41,46 @@ def find_flight(itinerary_parts, flight_number, origin, departure_date):
                 formatted_departure_date == departure_date):
                 return segment
 
+def fetch_data_from_sws_retrieve_pnr(pnr):
+    try:
+        scraper = cloudscraper.create_scraper()
+        url = "https://sws-integration-retrieve-pnr.skyairline.com/v1/pnr"
+        params = {"pnr": pnr}
+        response = scraper.get(url, params=params)
+        response.raise_for_status()
+        return response.json()
+    except Exception as err:
+        # TODO: Handle the exception properly
+        return None
+
 affected_flights = find_affected_flights()
 
 for index, flight in enumerate(affected_flights):
     print(f"Current {index + 1}: {flight['origin']} {flight['flightNumber']} {flight['departureDate']} / Total pnrs: {len(flight['affectedPnrs'])}")
     for pnr in flight['affectedPnrs']:
+        temp_data = {
+            "PNR": pnr,
+            "Affected Flight": f"{flight['origin']} {flight['flightNumber']} {flight['departureDate']}",
+            "Flight From Order": "",
+            "Flight From SWS": ""
+        }
+        
         data_from_reservation_order = fetch_data_from_reservation_order(pnr)
         if data_from_reservation_order:
             itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
             matching_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
             if matching_segment:
-                data_for_excel.append({
-                    "PNR": pnr,
-                    "Affected Flight": f"{flight['origin']} {flight['flightNumber']} {flight['departureDate']}",
-                    "Flight From Order": f"{matching_segment['origin']} {matching_segment['flightNumber']['marketing']} {matching_segment['departureDate']}",
-                })
-
+                temp_data["Flight From Order"] = f"{matching_segment['origin']} {matching_segment['flightNumber']['marketing']} {matching_segment['departureDate']}"
+        
+        data_from_sws_retrieve_pnr = fetch_data_from_sws_retrieve_pnr(pnr)
+        if data_from_sws_retrieve_pnr:
+            itinerary_parts = data_from_sws_retrieve_pnr.get('itineraryParts', [])
+            matching_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
+            if matching_segment:
+                temp_data["Flight From SWS"] = f"{matching_segment['origin']} {matching_segment['flightNumber']['marketing']} {matching_segment['departureDate']}"
+        
+        data_for_excel.append(temp_data)
 
 df = pd.DataFrame(data_for_excel)
 df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights")
+
