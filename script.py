@@ -62,25 +62,34 @@ for index, flight in enumerate(affected_flights):
             "PNR": pnr,
             "Affected Flight": f"{flight['origin']} {flight['flightNumber']} {flight['departureDate']}",
             "Flight From Order": "",
-            "Flight From SWS": ""
+            "Flight From SWS": "",
+            "Sync / Out of Sync": False  # Default to False
         }
+        
+        order_segment = None
+        sws_segment = None
         
         data_from_reservation_order = fetch_data_from_reservation_order(pnr)
         if data_from_reservation_order:
             itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
-            matching_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
-            if matching_segment:
-                temp_data["Flight From Order"] = f"{matching_segment['origin']} {matching_segment['flightNumber']['marketing']} {matching_segment['departureDate']}"
+            order_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
+            if order_segment:
+                temp_data["Flight From Order"] = f"{order_segment['origin']} {order_segment['flightNumber']['marketing']} {order_segment['departureDate']}"
         
         data_from_sws_retrieve_pnr = fetch_data_from_sws_retrieve_pnr(pnr)
         if data_from_sws_retrieve_pnr:
             itinerary_parts = data_from_sws_retrieve_pnr.get('itineraryParts', [])
-            matching_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
-            if matching_segment:
-                temp_data["Flight From SWS"] = f"{matching_segment['origin']} {matching_segment['flightNumber']['marketing']} {matching_segment['departureDate']}"
+            sws_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
+            if sws_segment:
+                temp_data["Flight From SWS"] = f"{sws_segment['origin']} {sws_segment['flightNumber']['marketing']} {sws_segment['departureDate']}"
+        
+        # Compare segments to set Sync / Out of Sync
+        if order_segment and sws_segment:
+            temp_data["Sync / Out of Sync"] = (order_segment['origin'] == sws_segment['origin'] and
+                                               order_segment['flightNumber']['marketing'] == sws_segment['flightNumber']['marketing'] and
+                                               order_segment['departureDate'] == sws_segment['departureDate'])
         
         data_for_excel.append(temp_data)
 
 df = pd.DataFrame(data_for_excel)
 df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights")
-
