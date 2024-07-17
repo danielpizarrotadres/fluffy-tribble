@@ -14,8 +14,8 @@ data_for_excel = []
 def find_affected_flights():
     db = client[db_name]
     collection = db[db_collection]
-    # query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
-    query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
+    query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
+    # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
     documents = collection.find(query)
     return list(documents)
 
@@ -70,6 +70,7 @@ for index, flight in enumerate(affected_flights):
         sws_segment = None
         
         data_from_reservation_order = fetch_data_from_reservation_order(pnr)
+
         if data_from_reservation_order:
             itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
             order_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
