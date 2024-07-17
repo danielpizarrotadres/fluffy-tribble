@@ -73,17 +73,24 @@ for index, flight in enumerate(affected_flights):
         data_from_reservation_order = fetch_data_from_reservation_order(pnr)
 
         if data_from_reservation_order:
+            print(f"Data from reservation order: {data_from_reservation_order['orderId']} and total segments: {len(data_from_reservation_order.get('itineraryParts', []))}")
             itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
             order_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
             if order_segment:
                 temp_data["Flight From Order"] = f"{order_segment['origin']} {order_segment['flightNumber']['marketing']} {order_segment['departureDate']}"
-        
+        else:
+            print(f"No data found from reservation order for pnr: {pnr}")
+
         data_from_sws_retrieve_pnr = fetch_data_from_sws_retrieve_pnr(pnr)
+        
         if data_from_sws_retrieve_pnr:
+            print(f"Data from sws retrieve pnr: {data_from_sws_retrieve_pnr['traceability']['referenceCodes']} and total segments: {len(data_from_sws_retrieve_pnr.get('itineraryParts', []))}")
             itinerary_parts = data_from_sws_retrieve_pnr.get('itineraryParts', [])
             sws_segment = find_flight(itinerary_parts, flight['flightNumber'], flight['origin'], flight['departureDate'])
             if sws_segment:
                 temp_data["Flight From SWS"] = f"{sws_segment['origin']} {sws_segment['flightNumber']['marketing']} {sws_segment['departureDate']}"
+        else:
+            print(f"No data found from sws retrieve pnr for pnr: {pnr}")
         
         # Compare segments to set Sync / Out of Sync
         if order_segment and sws_segment:
@@ -94,9 +101,5 @@ for index, flight in enumerate(affected_flights):
         
         data_for_excel.append(temp_data)
 
-        df = pd.DataFrame(data_for_excel)
-        df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights")
-
 df = pd.DataFrame(data_for_excel)
 df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights-Finished")
-
