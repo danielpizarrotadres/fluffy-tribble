@@ -56,8 +56,9 @@ def fetch_data_from_sws_retrieve_pnr(pnr):
 affected_flights = find_affected_flights()
 
 for index, flight in enumerate(affected_flights):
-    print(f"Current {index + 1}: {flight['origin']} {flight['flightNumber']} {flight['departureDate']} / Total pnrs: {len(flight['affectedPnrs'])}")
-    for pnr in flight['affectedPnrs']:
+    print(f"Current {index + 1} of total {len(affected_flights)}: {flight['origin']} {flight['flightNumber']} {flight['departureDate']} / Total pnrs: {len(flight['affectedPnrs'])}")
+    for j, pnr in enumerate(flight['affectedPnrs']):
+        print(f"Current {j + 1} of total {len(flight['affectedPnrs'])}")
         temp_data = {
             "PNR": pnr,
             "Affected Flight": f"{flight['origin']} {flight['flightNumber']} {flight['departureDate']}",
@@ -94,3 +95,4 @@ for index, flight in enumerate(affected_flights):
 
 df = pd.DataFrame(data_for_excel)
 df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights")
+
