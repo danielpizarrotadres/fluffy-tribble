@@ -55,8 +55,6 @@ def find_flight(flight, itinerary_parts):
     hash_flight = f"{flight['origin']}-{flight['destination']}-{flight['departureDate']}-{flight['carrier']}-{str(flight['flightNumber']).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
-            print(segment['departureDate'])
-            print(flight['scheduledDepartureTime'])
             if (segment['hash'] == hash_flight) and segment['departureDate'] == flight['scheduledDepartureTime']:
                 return segment
     return None
