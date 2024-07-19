@@ -20,7 +20,7 @@ def find_affected_flights():
     documents = collection.find(query)
     return list(documents)
 
-def fetch_data_from_reservation_order(pnr):
+def fetch_order(pnr):
     try:
         url = "https://reservation-order.skyairline.com/v1/order/find-by-pnr"
         payload = {"pnr": pnr }
@@ -34,7 +34,7 @@ def fetch_data_from_reservation_order(pnr):
         print(err)
         return None
 
-def fetch_data_from_sws_retrieve_pnr(pnr):
+def fetch_reservation(pnr):
     try:
         url = "https://sws-integration-retrieve-pnr.skyairline.com/v1/pnr"
         params = {"pnr": pnr}
@@ -52,7 +52,7 @@ def find_flight(flight, itinerary_parts):
     hash_flight = f"{flight['origin']}-{flight['destination']}-{flight['departureDate']}-{flight['carrier']}-{str(flight['flightNumber']).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
-            if (segment['hash'] == hash_flight):
+            if (segment['hash'] == hash_flight) and segment['departureDate'] == flight['scheduledDepartureTime']:
                 return segment
     return None
 
@@ -60,34 +60,16 @@ affected_flights = find_affected_flights()
 
 for i, flight in enumerate(affected_flights):
     print(f"Current Flight {i + 1} of total {len(affected_flights)}:")
-
     for j, pnr in enumerate(flight['affectedPnrs']):
-
-        data_from_reservation_order = fetch_data_from_reservation_order(pnr)
-
-        if data_from_reservation_order:
-            print(f"- Order: {data_from_reservation_order['orderId']} / total segments: {len(data_from_reservation_order.get('itineraryParts', []))}")
-
-            itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
-
-            affected_flight_in_order = find_flight(flight['oldFlight'], itinerary_parts)
-
-            if affected_flight_in_order:
-                print(affected_flight_in_order)
-
-                data_from_sws_retrieve_pnr = fetch_data_from_sws_retrieve_pnr(pnr)
-
-                if data_from_sws_retrieve_pnr:
-
-                    itinerary_parts = data_from_sws_retrieve_pnr.get('itineraryParts', [])
-
-                    print('- From sws')
-                    print(itinerary_parts)
-
+        reservation_order = fetch_order(pnr)
+        if reservation_order:
+            print(f"- Order: {reservation_order['orderId']} / total flights: {len(reservation_order.get('itineraryParts', []))}")
+            itinerary_parts = reservation_order.get('itineraryParts', [])
+            affected_flight = find_flight(flight['oldFlight'], itinerary_parts)
+            if affected_flight:
+                reservation = fetch_reservation(pnr)
+                if reservation:
+                    itinerary_parts = reservation.get('itineraryParts', [])
                     new_flight = find_flight(flight['newFlight'], itinerary_parts)
-
-                    print('-- New fligth')
-
                     print(new_flight)
-
                     pass
