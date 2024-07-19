@@ -34,44 +34,29 @@ def fetch_data_from_reservation_order(pnr):
         print(err)
         return None
 
-def find_flight(itinerary_parts, flight_number, origin, destination, departure_date):
+def find_affected_flight_in_order(old_flight, itinerary_parts):
+    hash_old_flight = f"{old_flight['origin']}-{old_flight['destination']}-{old_flight['departureDate']}-{old_flight['carrier']}-{str(old_flight['flightNumber']).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
-            departure_year, departure_month, departure_day = segment['departureDate'].split('T')[0].split('-')
-            formatted_departure_date = f"{departure_year}-{departure_month}-{departure_day}"
-            if (segment['flightNumber']['marketing'] == flight_number and
-                segment['origin'] == origin and
-                segment['destination'] == destination
-                and formatted_departure_date == departure_date):
+            if (segment['hash'] == hash_old_flight):
                 return segment
-
-def logger_flight(index, flight, affected_flights):
-    print(f"Current Flight {index + 1} of total {len(affected_flights)}:")
-    # print(f"ID: {flight['_id']}")
-    # print(f"Origin {flight['origin']} / {flight['flightNumber']} / {flight['departureDate']}")
-    # print(f"Old Flight: {flight['oldFlight']['origin']} / {flight['oldFlight']['destination']} / {flight['oldFlight']['scheduledDepartureTime']}  / {flight['oldFlight']['flightNumber']}")
-    # print(f"New Flight: {flight['newFlight']['origin']} / {flight['newFlight']['destination']} / {flight['newFlight']['scheduledDepartureTime']}  / {flight['newFlight']['flightNumber']}")
-
-# def logger_pnr(index, pnrs):
-#     print(f"Current Pnr {index + 1} of total {len(pnrs)}:")
+    return None
 
 affected_flights = find_affected_flights()
 
 for i, flight in enumerate(affected_flights):
-    logger_flight(i, flight, affected_flights)
+    print(f"Current Flight {i + 1} of total {len(affected_flights)}:")
 
     for j, pnr in enumerate(flight['affectedPnrs']):
-        # logger_pnr(j, flight['affectedPnrs'])
-        
+
         data_from_reservation_order = fetch_data_from_reservation_order(pnr)
 
         if data_from_reservation_order:
-            print(f"    Order: {data_from_reservation_order['orderId']} / total segments: {len(data_from_reservation_order.get('itineraryParts', []))}")
+            print(f"- Order: {data_from_reservation_order['orderId']} / total segments: {len(data_from_reservation_order.get('itineraryParts', []))}")
+
             itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
-            order_segment = find_flight(
-                itinerary_parts,
-                flight['newFlight']['flightNumber'],
-                flight['newFlight']['origin'],
-                flight['newFlight']['destination'],
-                flight['departureDate']
-            )
+
+            affected_flight_in_order = find_affected_flight_in_order(flight['oldFlight'], itinerary_parts)
+
+            if affected_flight_in_order:
+                print(affected_flight_in_order)
