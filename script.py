@@ -34,11 +34,25 @@ def fetch_data_from_reservation_order(pnr):
         print(err)
         return None
 
-def find_affected_flight_in_order(old_flight, itinerary_parts):
-    hash_old_flight = f"{old_flight['origin']}-{old_flight['destination']}-{old_flight['departureDate']}-{old_flight['carrier']}-{str(old_flight['flightNumber']).zfill(4)}"
+def fetch_data_from_sws_retrieve_pnr(pnr):
+    try:
+        url = "https://sws-integration-retrieve-pnr.skyairline.com/v1/pnr"
+        params = {"pnr": pnr}
+        response = scraper.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        response.close()
+        return data
+    except Exception as err:
+        print(f'Error into fetch_data_from_sws_retrieve_pnr for pnr: {pnr}')
+        print(err)
+        return None
+
+def find_flight(flight, itinerary_parts):
+    hash_flight = f"{flight['origin']}-{flight['destination']}-{flight['departureDate']}-{flight['carrier']}-{str(flight['flightNumber']).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
-            if (segment['hash'] == hash_old_flight):
+            if (segment['hash'] == hash_flight):
                 return segment
     return None
 
@@ -56,7 +70,24 @@ for i, flight in enumerate(affected_flights):
 
             itinerary_parts = data_from_reservation_order.get('itineraryParts', [])
 
-            affected_flight_in_order = find_affected_flight_in_order(flight['oldFlight'], itinerary_parts)
+            affected_flight_in_order = find_flight(flight['oldFlight'], itinerary_parts)
 
             if affected_flight_in_order:
                 print(affected_flight_in_order)
+
+                data_from_sws_retrieve_pnr = fetch_data_from_sws_retrieve_pnr(pnr)
+
+                if data_from_sws_retrieve_pnr:
+
+                    itinerary_parts = data_from_sws_retrieve_pnr.get('itineraryParts', [])
+
+                    print('- From sws')
+                    print(itinerary_parts)
+
+                    new_flight = find_flight(flight['newFlight'], itinerary_parts)
+
+                    print('-- New fligth')
+
+                    print(new_flight)
+
+                    pass
