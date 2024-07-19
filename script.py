@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from datetime import datetime
 import cloudscraper
 import pandas as pd
+import os
 
 db_url = 'mongodb+srv://affected_notification_request_prd_user:UXHwBpyoIGWVNr1P@itinerarios.yiqqc.mongodb.net/affected_notification_request_prd_db?retryWrites=true&w=majority&appName=ITINERARIOS'
 db_name = 'affected_flights_request_prd_db'
@@ -9,26 +10,28 @@ db_collection = 'affectations'
 
 client = MongoClient(db_url)
 
-data_for_excel = []
+scraper = cloudscraper.create_scraper()
 
 def find_affected_flights():
     db = client[db_name]
     collection = db[db_collection]
     query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    documents = collection.find(query)
+    documents = collection.find(query).skip(2000).limit(2118)
     return list(documents)
 
 def fetch_data_from_reservation_order(pnr):
     try:
-        scraper = cloudscraper.create_scraper()
         url = "https://reservation-order.skyairline.com/v1/order/find-by-pnr"
         payload = {"pnr": pnr }
         response = scraper.post(url, json=payload)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        response.close()  # Explicitly close the response
+        return data
     except Exception as err:
-        # TODO: Handle the exception properly
+        print(f'Error into fetch_data_from_reservation_order for pnr: {pnr}')
+        print(err)
         return None 
 
 def find_flight(itinerary_parts, flight_number, origin, departure_date):
@@ -43,17 +46,21 @@ def find_flight(itinerary_parts, flight_number, origin, departure_date):
 
 def fetch_data_from_sws_retrieve_pnr(pnr):
     try:
-        scraper = cloudscraper.create_scraper()
         url = "https://sws-integration-retrieve-pnr.skyairline.com/v1/pnr"
         params = {"pnr": pnr}
         response = scraper.get(url, params=params)
         response.raise_for_status()
-        return response.json()
+        data = response.json()
+        response.close()  # Explicitly close the response
+        return data
     except Exception as err:
-        # TODO: Handle the exception properly
+        print(f'Error into fetch_data_from_sws_retrieve_pnr for pnr: {pnr}')
+        print(err)
         return None
 
 affected_flights = find_affected_flights()
+
+data_for_excel = []
 
 for index, flight in enumerate(affected_flights):
     print(f"Current {index + 1} of total {len(affected_flights)}: {flight['origin']} {flight['flightNumber']} {flight['departureDate']} / Total pnrs: {len(flight['affectedPnrs'])}")
@@ -99,7 +106,15 @@ for index, flight in enumerate(affected_flights):
                   order_segment['departureDate'] == sws_segment['departureDate']
             temp_data["Sync / Out of Sync"] = str(sync_status)  # Convert boolean to string
         
+        print(temp_data)
         data_for_excel.append(temp_data)
 
-df = pd.DataFrame(data_for_excel)
-df.to_excel("affected_flights.xlsx", index=False, sheet_name="Affected Flights-Finished")
+output_directory = '/home/daniel/dev/py-helpers'
+output_file = os.path.join(output_directory, "affected_flights.xlsx")
+
+try:
+    df = pd.DataFrame(data_for_excel)
+    df.to_excel(output_file, index=False, sheet_name="Affected Flights-Finished")
+    print(f"Excel file saved successfully at {output_file}")
+except Exception as e:
+    print(f"Failed to save Excel file: {e}")
