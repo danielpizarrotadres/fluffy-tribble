@@ -51,6 +51,25 @@ def fetch_reservation(pnr):
         print(err)
         return None
 
+def fetch_common_order(pnr):
+    try:
+        url = "https://reservation-order.skyairline.com/v1/order/common"
+        headers = {
+            'Content-Type': 'application/json',
+            'authorization': '090C613FF55946E3B65506D4EC190364',
+            'x-api-key': '8D194F87CCEF48B7AE58B3C0AD770C0D',
+        }
+        payload = {"pnr": pnr}
+        response = scraper.put(url, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        response.close()
+        return data
+    except Exception as err:
+        print(f'Error into fetch_common_order for pnr: {pnr}')
+        print(err)
+        return None
+
 def find_flight(flight, itinerary_parts):
     hash_flight = f"{flight['origin']}-{flight['destination']}-{flight['departureDate']}-{flight['carrier']}-{str(flight['flightNumber']).zfill(4)}"
     for itinerary_part in itinerary_parts:
@@ -69,6 +88,7 @@ for i, flight in enumerate(affected_flights):
             "Pnr": pnr,
             "Affected Flight": "",
             "New Flight (Protector)": "",
+            "Order Sync": "Success"
         }
         reservation_order = fetch_order(pnr)
         if reservation_order:
@@ -84,6 +104,12 @@ for i, flight in enumerate(affected_flights):
                     if new_flight:
                         print(f"{green}Pnr has affected flight in order and new flight in host:{reset}")
                         temp_data['New Flight (Protector)'] = new_flight['hash']
+                        response = fetch_common_order(pnr)
+                        if response:
+                            temp_data['Order Sync'] = "Success"
+                        else:
+                            temp_data['Order Sync'] = "Failed"
+
                         data_for_excel.append(temp_data)
 
 output_directory = '/home/daniel/dev/py-helpers'
