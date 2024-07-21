@@ -20,7 +20,7 @@ def find_affected_flights():
     collection = db[db_collection]
     query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    documents = collection.find(query)
+    documents = collection.find(query).limit(1000)
     return list(documents)
 
 def fetch_order(pnr):
