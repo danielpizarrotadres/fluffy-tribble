@@ -30,7 +30,7 @@ def fetch_order(pnr):
         response = scraper.post(url, json=payload)
         response.raise_for_status()
         data = response.json()
-        response.close()  # Explicitly close the response
+        response.close()
         return data
     except Exception as err:
         print(f'Error into fetch_data_from_reservation_order for pnr: {pnr}')
