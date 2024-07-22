@@ -3,6 +3,7 @@ from datetime import datetime
 import cloudscraper
 import pandas as pd
 import os
+import pendulum
 
 green = "\033[92m"
 reset = "\033[0m"
@@ -103,6 +104,24 @@ def send_notification(payload):
         print(err)
         return None
 
+def operational_window_interval():
+    now = pendulum.now()
+    later = now.add(hours=72)
+    return now, later
+
+def is_in_operational_window(departure_date):
+    now, later = operational_window_interval()
+    departure = pendulum.parse(departure_date)
+    return now <= departure <= later
+
+def extract_time(datetime_str):
+    dt = datetime.fromisoformat(datetime_str)
+    return dt.strftime("%H:%M")
+
+def extract_date(datetime_str):
+    dt = datetime.fromisoformat(datetime_str)
+    return dt.strftime("%Y-%m-%d")
+
 affected_flights = find_affected_flights()
 data_for_excel = []
 
@@ -119,8 +138,6 @@ for i, flight in enumerate(affected_flights):
             print(f"    - Pnr: {pnr} / Order: {reservation_order['orderId']} / total flights: {len(reservation_order.get('itineraryParts', []))}")
             itinerary_parts = reservation_order.get('itineraryParts', [])
             affected_flight = find_affected_flight(flight, flight['oldFlight'], itinerary_parts)
-            print("Affected Flight")
-            print(affected_flight)
             if affected_flight:
                 temp_data['Affected Flight'] = affected_flight['hash']
                 reservation = fetch_reservation(pnr)
@@ -131,6 +148,17 @@ for i, flight in enumerate(affected_flights):
                         print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
                         temp_data['New Flight (Protector)'] = new_flight['hash']
                         data_for_excel.append(temp_data)
+                        
+                        in_operational_window = is_in_operational_window(new_flight['departureDate'])
+
+                        is_before_operational_window = False
+
+                        if in_operational_window == True:
+                            is_before_operational_window = False
+
+                        if in_operational_window == False:
+                            is_before_operational_window = True                         
+
                         data = {
                             "routingKey": "communication.intinerary.changed",
                             "channel": "itinerary-history-request",
@@ -138,69 +166,38 @@ for i, flight in enumerate(affected_flights):
                                 "homemarket": "CL",
                                 "language": "es",
                                 "pnr": pnr,
-                                "origin": flight['oldFlight']['origin'],
-                                "destination": flight['oldFlight']['origin'],
-                                "departureDate": "2024-10-25T09:30:00",
-                                "passengers": [
-                                    {
-                                        "id": 1,
-                                        "firstName": "CESIA",
-                                        "lastName": "GUIZADA",
-                                        "email": "",
-                                        "type": "",
-                                        "gender": "Male",
-                                        "dateOfBirth": "0085-01-31",
-                                        "documentInfo": {
-                                            "issuingCountry": "PE",
-                                            "documentNumber": "42801336",
-                                            "documentType": "I",
-                                            "nationality": "PE"
-                                        }
-                                    }
-                                ],
-                                "orderContact": [
-                                    {
-                                        "manager": {
-                                            "firstName": "CESIA",
-                                            "lastName": "GUIZADA",
-                                            "documentNumber": "42801336",
-                                            "documentType": "I"
-                                        },
-                                        "email": [
-                                            {
-                                                "value": "daniel.pizarro@skyairline.com"
-                                            }
-                                        ],
-                                        "phones": []
-                                    }
-                                ],
+                                "origin": new_flight['origin'],
+                                "destination": new_flight['destination'],
+                                "departureDate": new_flight['departureDate'],
+                                "passengers": reservation_order["passengers"],
+                                "orderContact": reservation_order['orderDetails']['orderContact'],
                                 "details": {
-                                    "pnr": "LFXLQM",
+                                    "pnr": pnr,
                                     "agency": False,
                                     "retail": True,
                                     "groups": False,
-                                    "before72": False,
-                                    "in72": True,
+                                    "before72": is_before_operational_window,
+                                    "in72": in_operational_window,
                                     "mmbLink": "https://mmb.skyairline.com/es/chile",
                                     "wciLink": "https://check-in.skyairline.com/es/chile",
                                     "yellowAlertLink": "https://www.skyairline.com/chile/formularios/contactanos",
                                     "oldFlight": {
-                                        "departureCity": "SCL",
-                                        "arrivalCity": "ZAL",
-                                        "arrivalTime": "09:30",
-                                        "departureDate": "2024-10-25",
-                                        "flightNumber": 111,
-                                        "departureTime": "09:30",
-                                        "duration": 90
+                                        "departureCity": affected_flight['origin'],
+                                        "arrivalCity": affected_flight['destination'],
+                                        "arrivalTime": extract_time(affected_flight['arrivalDate']),
+                                        "departureDate": extract_date(affected_flight['departureDate']),
+                                        "flightNumber": affected_flight['flightNumber']['operating'],
+                                        "departureTime": extract_time(affected_flight['departureDate']),
+                                        "duration": 0
                                     },
                                     "newFlight": {
-                                        "departureCity": "SCL",
-                                        "arrivalCity": "ZAL",
-                                        "arrivalTime": "09:30",
-                                        "departureDate": "2024-10-25",
-                                        "flightNumber": 111,
-                                        "departureTime": "09:30",
-                                        "duration": 90
+                                        "departureCity": new_flight['origin'],
+                                        "arrivalCity": new_flight['destination'],
+                                        "arrivalTime": extract_time(new_flight['arrivalDate']),
+                                        "departureDate": extract_date(new_flight['departureDate']),
+                                        "flightNumber": new_flight['flightNumber']['operating'],
+                                        "departureTime": extract_time(new_flight['departureDate']),
+                                        "duration": 0
                                     }
                                 }
                             }
