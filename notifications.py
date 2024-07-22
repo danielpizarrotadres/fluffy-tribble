@@ -81,13 +81,13 @@ def host_is_unsync(affected_flight, itinerary_parts):
                     return segment
     return None
 
-def update_manual_notified(flight, pnr, syncStatus):
+def update_manual_notified(flight, pnr, syncStatus, mailStatus):
     db = client[db_name]
     affected_pnrs_collection = db['affected_pnrs']
     document = {
         "pnr": pnr,
         "flightId": flight['_id'],
-        "manualNotified": True,
+        "manualNotified": mailStatus,
         "sync": syncStatus,
     }
     affected_pnrs_collection.insert_one(document)
@@ -223,19 +223,18 @@ for i, flight in enumerate(affected_flights):
                                 }
                             }
 
-                            print(f"    - Sending notification for pnr: {pnr}")
-                            send_notification_response = send_notification(data)
-                            print(f"    - Succesfully notification for pnr: {pnr}")
-
                             response = fetch_common_order(pnr)
                             if response:
                                 print(f"{green}Pnr successfully sync{reset}")
                                 temp_data['Order Sync'] = "Success"
-                                update_manual_notified(flight, pnr, True)
+                                print(f"    - Sending notification for pnr: {pnr}")
+                                send_notification_response = send_notification(data)
+                                print(f"    - Succesfully notification for pnr: {pnr}")
+                                update_manual_notified(flight, pnr, True, True)
                             else:
                                 print(f"{red}Could not sync pnr{reset}")
                                 temp_data['Order Sync'] = "Failed"
-                                update_manual_notified(flight, pnr, False)
+                                update_manual_notified(flight, pnr, False, False)
 
 
 
