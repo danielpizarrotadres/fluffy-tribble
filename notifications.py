@@ -199,6 +199,7 @@ for i, flight in enumerate(affected_flights):
                             }
 
                             print(f"    - Sending notification for pnr: {pnr}")
+                            print(data)
                             # send_notification_response = send_notification(data)
                             print(f"    - Succesfully notification for pnr: {pnr}")
 
