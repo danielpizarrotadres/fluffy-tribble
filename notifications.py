@@ -81,11 +81,15 @@ def host_is_unsync(affected_flight, itinerary_parts):
                     return segment
     return None
 
-def update_manual_notified(flight):
+def update_manual_notified(flight, pnr):
     db = client[db_name]
-    query = {"_id": flight['_id']}
-    new_values = {"$set": {"manualNotified": True}}
-    db[db_collection].update_one(query, new_values)
+    affected_pnrs_collection = db['affected_pnrs']
+    document = {
+        "pnr": pnr,
+        "flightId": flight['_id'],
+        "manualNotified": True
+    }
+    affected_pnrs_collection.insert_one(document)
 
 def send_notification(payload):
     try:
