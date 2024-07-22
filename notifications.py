@@ -68,15 +68,15 @@ def find_affected_flight(aux, flight, itinerary_parts):
                 return segment
     return None
 
-def host_is_unsync(flight, itinerary_parts, new_flight):
-    origin = flight['origin']
-    departureDate = flight['departureDate']
-    flightNumber = flight['flightNumber']
-    hash_flight = f"{origin}-{flight['destination']}-{departureDate}-{flight['carrier']}-{str(flightNumber).zfill(4)}"
+def host_is_unsync(affected_flight, itinerary_parts):
+    origin = affected_flight['origin']
+    departureDate = affected_flight['departureDate']
+    flightNumber = affected_flight['flightNumber']
+    hash_flight = f"{origin}-{affected_flight['destination']}-{departureDate}-{affected_flight['carrierCode']['operating']}-{str(flightNumber).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
             if (segment['hash'] == hash_flight):
-                if (segment['departureDate'] != new_flight['scheduledDepartureTime']):
+                if (segment['departureDate'] != affected_flight['departureDate']):
                     return segment
     return None
 
@@ -120,6 +120,8 @@ def extract_date(datetime_str):
 affected_flights = find_affected_flights()
 data_for_excel = []
 
+print('Hello!')
+
 for i, flight in enumerate(affected_flights):
     print(f"{green}Current Flight {i + 1} of total {len(affected_flights)}:{reset}")
     for j, pnr in enumerate(flight['affectedPnrs']):
@@ -138,7 +140,7 @@ for i, flight in enumerate(affected_flights):
                 reservation = fetch_reservation(pnr)
                 if reservation:
                     itinerary_parts = reservation.get('itineraryParts', [])
-                    new_flight = host_is_unsync(flight['oldFlight'], itinerary_parts, flight['newFlight']) 
+                    new_flight = host_is_unsync(affected_flight, itinerary_parts)
                     if new_flight:
                         print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
                         temp_data['New Flight (Protector)'] = new_flight['hash']
