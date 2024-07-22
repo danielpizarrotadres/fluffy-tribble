@@ -20,7 +20,7 @@ def find_affected_flights():
     collection = db[db_collection]
     # query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    query = {"origin": "CUZ", "flightNumber": 5006, "departureDate": "2024-07-18", "affectedPnrs": "LFXLQM"}
+    query = {"affectedPnrs": "LBZFJG"}
     documents = collection.find(query)
     return list(documents)
 
@@ -83,6 +83,13 @@ def host_is_unsync(aux, flight, itinerary_parts):
                 return segment
     return None
 
+def update_manual_notified(flight):
+    db = client[db_name]
+    query = {"_id": flight['_id']}
+    new_values = {"$set": {"manualNotified": True}}
+    db[db_collection].update_one(query, new_values)
+
+
 affected_flights = find_affected_flights()
 data_for_excel = []
 
@@ -91,29 +98,30 @@ print(f"Total affected flights: {len(affected_flights)}")
 for i, flight in enumerate(affected_flights):
     print(f"{green}Current Flight {i + 1} of total {len(affected_flights)}:{reset}")
     for j, pnr in enumerate(flight['affectedPnrs']):
-        if pnr == 'LFXLQM':
-            temp_data = {
-                "Pnr": pnr,
-                "Affected Flight": "",
-                "New Flight (Protector)": "",
-            }
-            reservation_order = fetch_order(pnr)
-            if reservation_order:
-                print(f"    - Pnr: {pnr} / Order: {reservation_order['orderId']} / total flights: {len(reservation_order.get('itineraryParts', []))}")
-                itinerary_parts = reservation_order.get('itineraryParts', [])
-                affected_flight = find_affected_flight(flight, flight['oldFlight'], itinerary_parts)
-                print("Affected Flight")
-                print(affected_flight)
-                if affected_flight:
-                    temp_data['Affected Flight'] = affected_flight['hash']
-                    reservation = fetch_reservation(pnr)
-                    if reservation:
-                        itinerary_parts = reservation.get('itineraryParts', [])
-                        new_flight = host_is_unsync(flight, flight['oldFlight'], itinerary_parts)
-                        if new_flight:
-                            print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
-                            temp_data['New Flight (Protector)'] = new_flight['hash']
-                            data_for_excel.append(temp_data)
+        temp_data = {
+            "Pnr": pnr,
+            "Affected Flight": "",
+            "New Flight (Protector)": "",
+        }
+        reservation_order = fetch_order(pnr)
+        if reservation_order:
+            print(f"    - Pnr: {pnr} / Order: {reservation_order['orderId']} / total flights: {len(reservation_order.get('itineraryParts', []))}")
+            itinerary_parts = reservation_order.get('itineraryParts', [])
+            affected_flight = find_affected_flight(flight, flight['oldFlight'], itinerary_parts)
+            print("Affected Flight")
+            print(affected_flight)
+            if affected_flight:
+                temp_data['Affected Flight'] = affected_flight['hash']
+                reservation = fetch_reservation(pnr)
+                if reservation:
+                    itinerary_parts = reservation.get('itineraryParts', [])
+                    new_flight = host_is_unsync(flight, flight['oldFlight'], itinerary_parts)
+                    if new_flight:
+                        print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
+                        temp_data['New Flight (Protector)'] = new_flight['hash']
+                        data_for_excel.append(temp_data)
+                        update_manual_notified(flight)
+
 
 output_directory = '/home/daniel/dev/py-helpers'
 output_file = os.path.join(output_directory, "unsync-schedule.xlsx")
