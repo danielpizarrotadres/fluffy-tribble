@@ -19,9 +19,9 @@ scraper = cloudscraper.create_scraper()
 def find_affected_flights():
     db = client[db_name]
     collection = db[db_collection]
-    # query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
+    query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    query = {"affectedPnrs": "LBZFJG"}
+    # query = {"affectedPnrs": "LBZFJG"}
     documents = collection.find(query)
     return list(documents)
 
@@ -32,7 +32,7 @@ def fetch_order(pnr):
         response = scraper.post(url, json=payload)
         response.raise_for_status()
         data = response.json()
-        response.close()  # Explicitly close the response
+        response.close()
         return data
     except Exception as err:
         print(f'Error into fetch_data_from_reservation_order for pnr: {pnr}')
@@ -91,7 +91,6 @@ def update_manual_notified(flight):
     db[db_collection].update_one(query, new_values)
 
 def send_notification(payload):
-    print(f"Sending notification for flight: ")
     try:
         url = "https://check-in-publisher.skyairline.com/v1/publish-message"
         response = scraper.post(url, json=payload)
@@ -202,6 +201,11 @@ for i, flight in enumerate(affected_flights):
                                 }
                             }
                         }
+
+                        print(f"    - Sending notification for pnr: {pnr}")
+                        send_notification_response = send_notification(data)
+                        print(f"    - Succesfully notification for pnr: {pnr}")
+
                         update_manual_notified(flight)
 
 
