@@ -7,6 +7,7 @@ import pendulum
 
 green = "\033[92m"
 reset = "\033[0m"
+red = "\033[91m"
 
 db_url = 'mongodb+srv://affected_notification_request_prd_user:UXHwBpyoIGWVNr1P@itinerarios.yiqqc.mongodb.net/affected_notification_request_prd_db?retryWrites=true&w=majority&appName=ITINERARIOS'
 db_name = 'affected_flights_request_prd_db'
@@ -117,6 +118,25 @@ def extract_date(datetime_str):
     dt = datetime.fromisoformat(datetime_str)
     return dt.strftime("%Y-%m-%d")
 
+def fetch_common_order(pnr):
+    try:
+        url = "https://reservation-order.skyairline.com/v1/order/common"
+        headers = {
+            'Content-Type': 'application/json',
+            'authorization': '090C613FF55946E3B65506D4EC190364',
+            'x-api-key': '8D194F87CCEF48B7AE58B3C0AD770C0D',
+        }
+        payload = {"pnr": pnr}
+        response = scraper.put(url, json=payload, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        response.close()
+        return data
+    except Exception as err:
+        print(f'Error into fetch_common_order for pnr: {pnr}')
+        print(err)
+        return None
+
 affected_flights = find_affected_flights()
 data_for_excel = []
 
@@ -199,11 +219,19 @@ for i, flight in enumerate(affected_flights):
                             }
 
                             print(f"    - Sending notification for pnr: {pnr}")
-                            print(data)
-                            # send_notification_response = send_notification(data)
+                            send_notification_response = send_notification(data)
                             print(f"    - Succesfully notification for pnr: {pnr}")
 
                             update_manual_notified(flight)
+
+                            response = fetch_common_order(pnr)
+                            if response:
+                                print(f"{green}Pnr successfully sync{reset}")
+                                temp_data['Order Sync'] = "Success"
+                            else:
+                                print(f"{red}Could not sync pnr{reset}")
+                                temp_data['Order Sync'] = "Failed"
+
 
 
 output_directory = '/home/daniel/dev/py-helpers'
