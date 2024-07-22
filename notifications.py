@@ -75,7 +75,6 @@ def host_is_unsync(flight, itinerary_parts, new_flight):
     hash_flight = f"{origin}-{flight['destination']}-{departureDate}-{flight['carrier']}-{str(flightNumber).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
-            print(f"Segment hash {segment['hash']} - Flight hash {hash_flight}")
             if (segment['hash'] == hash_flight):
                 if (segment['departureDate'] != new_flight['scheduledDepartureTime']):
                     return segment
