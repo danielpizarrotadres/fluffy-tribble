@@ -86,7 +86,7 @@ def update_manual_notified(flight, pnr, syncStatus, mailStatus):
     affected_pnrs_collection = db['affected_pnrs']
     document = {
         "pnr": pnr,
-        "flightId": flight['_id'],
+        "affectationId": flight['_id'],
         "manualNotified": mailStatus,
         "sync": syncStatus,
     }
