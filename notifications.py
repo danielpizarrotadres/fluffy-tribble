@@ -19,10 +19,10 @@ scraper = cloudscraper.create_scraper()
 def find_affected_flights():
     db = client[db_name]
     collection = db[db_collection]
-    query = {"departureDate": {"$gte": "2024-07-17"}, "affectedPnrs": {"$ne": []}}
+    query = {"departureDate": {"$gte": "2024-07-22"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    # query = {"affectedPnrs": "LBZFJG"}
-    documents = collection.find(query)
+    # query = {"affectedPnrs": "ACRPSJ"}
+    documents = collection.find(query).limit(1000)
     return list(documents)
 
 def fetch_order(pnr):
@@ -68,19 +68,16 @@ def find_affected_flight(aux, flight, itinerary_parts):
                 return segment
     return None
 
-def host_is_unsync(aux, flight, itinerary_parts):
+def host_is_unsync(flight, itinerary_parts, new_flight):
     origin = flight['origin']
     departureDate = flight['departureDate']
     flightNumber = flight['flightNumber']
-    if (aux):
-        origin = aux['origin']
-        departureDate = aux['departureDate']
-        flightNumber = aux['flightNumber']
     hash_flight = f"{origin}-{flight['destination']}-{departureDate}-{flight['carrier']}-{str(flightNumber).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
+            print(f"Segment hash {segment['hash']} - Flight hash {hash_flight}")
             if (segment['hash'] == hash_flight):
-                if (segment['departureDate'] != flight['scheduledDepartureTime']):
+                if (segment['departureDate'] != new_flight['scheduledDepartureTime']):
                     return segment
     return None
 
@@ -142,7 +139,7 @@ for i, flight in enumerate(affected_flights):
                 reservation = fetch_reservation(pnr)
                 if reservation:
                     itinerary_parts = reservation.get('itineraryParts', [])
-                    new_flight = host_is_unsync(flight, flight['oldFlight'], itinerary_parts)
+                    new_flight = host_is_unsync(flight['oldFlight'], itinerary_parts, flight['newFlight']) 
                     if new_flight:
                         print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
                         temp_data['New Flight (Protector)'] = new_flight['hash']
@@ -203,7 +200,7 @@ for i, flight in enumerate(affected_flights):
                         }
 
                         print(f"    - Sending notification for pnr: {pnr}")
-                        send_notification_response = send_notification(data)
+                        # send_notification_response = send_notification(data)
                         print(f"    - Succesfully notification for pnr: {pnr}")
 
                         update_manual_notified(flight)
