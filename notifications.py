@@ -21,7 +21,7 @@ def find_affected_flights():
     collection = db[db_collection]
     query = {"departureDate": {"$gte": "2024-07-22"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    # query = {"affectedPnrs": "ACRPSJ"}
+    # query = {"affectedPnrs": "WOZGCX"}
     documents = collection.find(query).limit(1000)
     return list(documents)
 
@@ -70,8 +70,8 @@ def find_affected_flight(aux, flight, itinerary_parts):
 
 def host_is_unsync(affected_flight, itinerary_parts):
     origin = affected_flight['origin']
-    departureDate = affected_flight['departureDate']
-    flightNumber = affected_flight['flightNumber']
+    departureDate = extract_date(affected_flight['departureDate'])
+    flightNumber = affected_flight['flightNumber']['operating']
     hash_flight = f"{origin}-{affected_flight['destination']}-{departureDate}-{affected_flight['carrierCode']['operating']}-{str(flightNumber).zfill(4)}"
     for itinerary_part in itinerary_parts:
         for segment in itinerary_part['segments']:
@@ -120,91 +120,89 @@ def extract_date(datetime_str):
 affected_flights = find_affected_flights()
 data_for_excel = []
 
-print('Hello!')
-
 for i, flight in enumerate(affected_flights):
     print(f"{green}Current Flight {i + 1} of total {len(affected_flights)}:{reset}")
     for j, pnr in enumerate(flight['affectedPnrs']):
-        temp_data = {
-            "Pnr": pnr,
-            "Affected Flight": "",
-            "New Flight (Protector)": "",
-        }
-        reservation_order = fetch_order(pnr)
-        if reservation_order:
-            print(f"    - Pnr: {pnr} / Order: {reservation_order['orderId']} / total flights: {len(reservation_order.get('itineraryParts', []))}")
-            itinerary_parts = reservation_order.get('itineraryParts', [])
-            affected_flight = find_affected_flight(flight, flight['oldFlight'], itinerary_parts)
-            if affected_flight:
-                temp_data['Affected Flight'] = affected_flight['hash']
-                reservation = fetch_reservation(pnr)
-                if reservation:
-                    itinerary_parts = reservation.get('itineraryParts', [])
-                    new_flight = host_is_unsync(affected_flight, itinerary_parts)
-                    if new_flight:
-                        print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
-                        temp_data['New Flight (Protector)'] = new_flight['hash']
-                        data_for_excel.append(temp_data)
-                        
-                        in_operational_window = is_in_operational_window(new_flight['departureDate'])
+            temp_data = {
+                "Pnr": pnr,
+                "Affected Flight": "",
+                "New Flight (Protector)": "",
+            }
+            reservation_order = fetch_order(pnr)
+            if reservation_order:
+                print(f"    - Pnr: {pnr} / Order: {reservation_order['orderId']} / total flights: {len(reservation_order.get('itineraryParts', []))}")
+                itinerary_parts = reservation_order.get('itineraryParts', [])
+                affected_flight = find_affected_flight(flight, flight['oldFlight'], itinerary_parts)
+                if affected_flight:
+                    temp_data['Affected Flight'] = affected_flight['hash']
+                    reservation = fetch_reservation(pnr)
+                    if reservation:
+                        itinerary_parts = reservation.get('itineraryParts', [])
+                        new_flight = host_is_unsync(affected_flight, itinerary_parts)
+                        if new_flight:
+                            print(f"{green}Pnr has affected flight in order and unsync schedule in host:{reset}")
+                            temp_data['New Flight (Protector)'] = new_flight['hash']
+                            data_for_excel.append(temp_data)
+                            
+                            in_operational_window = is_in_operational_window(new_flight['departureDate'])
 
-                        is_before_operational_window = False
-
-                        if in_operational_window == True:
                             is_before_operational_window = False
 
-                        if in_operational_window == False:
-                            is_before_operational_window = True                         
+                            if in_operational_window == True:
+                                is_before_operational_window = False
 
-                        data = {
-                            "routingKey": "communication.intinerary.changed",
-                            "channel": "itinerary-history-request",
-                            "message": {
-                                "homemarket": "CL",
-                                "language": "es",
-                                "pnr": pnr,
-                                "origin": new_flight['origin'],
-                                "destination": new_flight['destination'],
-                                "departureDate": new_flight['departureDate'],
-                                "passengers": reservation_order["passengers"],
-                                "orderContact": reservation_order['orderDetails']['orderContact'],
-                                "details": {
+                            if in_operational_window == False:
+                                is_before_operational_window = True                         
+
+                            data = {
+                                "routingKey": "communication.intinerary.changed",
+                                "channel": "itinerary-history-request",
+                                "message": {
+                                    "homemarket": "CL",
+                                    "language": "es",
                                     "pnr": pnr,
-                                    "agency": False,
-                                    "retail": True,
-                                    "groups": False,
-                                    "before72": is_before_operational_window,
-                                    "in72": in_operational_window,
-                                    "mmbLink": "https://mmb.skyairline.com/es/chile",
-                                    "wciLink": "https://check-in.skyairline.com/es/chile",
-                                    "yellowAlertLink": "https://www.skyairline.com/chile/formularios/contactanos",
-                                    "oldFlight": {
-                                        "departureCity": affected_flight['origin'],
-                                        "arrivalCity": affected_flight['destination'],
-                                        "arrivalTime": extract_time(affected_flight['arrivalDate']),
-                                        "departureDate": extract_date(affected_flight['departureDate']),
-                                        "flightNumber": affected_flight['flightNumber']['operating'],
-                                        "departureTime": extract_time(affected_flight['departureDate']),
-                                        "duration": 0
-                                    },
-                                    "newFlight": {
-                                        "departureCity": new_flight['origin'],
-                                        "arrivalCity": new_flight['destination'],
-                                        "arrivalTime": extract_time(new_flight['arrivalDate']),
-                                        "departureDate": extract_date(new_flight['departureDate']),
-                                        "flightNumber": new_flight['flightNumber']['operating'],
-                                        "departureTime": extract_time(new_flight['departureDate']),
-                                        "duration": 0
+                                    "origin": new_flight['origin'],
+                                    "destination": new_flight['destination'],
+                                    "departureDate": new_flight['departureDate'],
+                                    "passengers": reservation_order["passengers"],
+                                    "orderContact": reservation_order['orderDetails']['orderContact'],
+                                    "details": {
+                                        "pnr": pnr,
+                                        "agency": False,
+                                        "retail": True,
+                                        "groups": False,
+                                        "before72": is_before_operational_window,
+                                        "in72": in_operational_window,
+                                        "mmbLink": "https://mmb.skyairline.com/es/chile",
+                                        "wciLink": "https://check-in.skyairline.com/es/chile",
+                                        "yellowAlertLink": "https://www.skyairline.com/chile/formularios/contactanos",
+                                        "oldFlight": {
+                                            "departureCity": affected_flight['origin'],
+                                            "arrivalCity": affected_flight['destination'],
+                                            "arrivalTime": extract_time(affected_flight['arrivalDate']),
+                                            "departureDate": extract_date(affected_flight['departureDate']),
+                                            "flightNumber": affected_flight['flightNumber']['operating'],
+                                            "departureTime": extract_time(affected_flight['departureDate']),
+                                            "duration": 0
+                                        },
+                                        "newFlight": {
+                                            "departureCity": new_flight['origin'],
+                                            "arrivalCity": new_flight['destination'],
+                                            "arrivalTime": extract_time(new_flight['arrivalDate']),
+                                            "departureDate": extract_date(new_flight['departureDate']),
+                                            "flightNumber": new_flight['flightNumber']['operating'],
+                                            "departureTime": extract_time(new_flight['departureDate']),
+                                            "duration": 0
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        print(f"    - Sending notification for pnr: {pnr}")
-                        # send_notification_response = send_notification(data)
-                        print(f"    - Succesfully notification for pnr: {pnr}")
+                            print(f"    - Sending notification for pnr: {pnr}")
+                            # send_notification_response = send_notification(data)
+                            print(f"    - Succesfully notification for pnr: {pnr}")
 
-                        update_manual_notified(flight)
+                            update_manual_notified(flight)
 
 
 output_directory = '/home/daniel/dev/py-helpers'
