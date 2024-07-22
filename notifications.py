@@ -22,8 +22,8 @@ def find_affected_flights():
     collection = db[db_collection]
     query = {"departureDate": {"$gte": "2024-07-22"}, "affectedPnrs": {"$ne": []}}
     # query = {"flightNumber": 285, "departureDate": "2025-01-01", "origin": "ANF"}
-    # query = {"affectedPnrs": "WOZGCX"}
-    documents = collection.find(query).limit(1000)
+    # query = {"affectedPnrs": "YKWCDE"}
+    documents = collection.find(query).sort("_id", 1).limit(1000)
     return list(documents)
 
 def fetch_order(pnr):
@@ -81,13 +81,14 @@ def host_is_unsync(affected_flight, itinerary_parts):
                     return segment
     return None
 
-def update_manual_notified(flight, pnr):
+def update_manual_notified(flight, pnr, syncStatus):
     db = client[db_name]
     affected_pnrs_collection = db['affected_pnrs']
     document = {
         "pnr": pnr,
         "flightId": flight['_id'],
-        "manualNotified": True
+        "manualNotified": True,
+        "sync": syncStatus,
     }
     affected_pnrs_collection.insert_one(document)
 
@@ -226,15 +227,15 @@ for i, flight in enumerate(affected_flights):
                             send_notification_response = send_notification(data)
                             print(f"    - Succesfully notification for pnr: {pnr}")
 
-                            update_manual_notified(flight)
-
                             response = fetch_common_order(pnr)
                             if response:
                                 print(f"{green}Pnr successfully sync{reset}")
                                 temp_data['Order Sync'] = "Success"
+                                update_manual_notified(flight, pnr, True)
                             else:
                                 print(f"{red}Could not sync pnr{reset}")
                                 temp_data['Order Sync'] = "Failed"
+                                update_manual_notified(flight, pnr, False)
 
 
 
