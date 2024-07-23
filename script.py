@@ -7,9 +7,9 @@ import os
 green = "\033[92m"
 reset = "\033[0m"
 
-db_url = 'mongodb+srv://affected_notification_request_prd_user:UXHwBpyoIGWVNr1P@itinerarios.yiqqc.mongodb.net/affected_notification_request_prd_db?retryWrites=true&w=majority&appName=ITINERARIOS'
-db_name = 'affected_flights_request_prd_db'
-db_collection = 'affectations'
+db_url = ''
+db_name = ''
+db_collection = ''
 
 client = MongoClient(db_url)
 
